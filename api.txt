@@ -1,0 +1,158 @@
+# API Definition - Uber Core Rides (v1)
+
+## Entity Definitions
+
+### Location
+- lat: float
+- lng: float
+- address: string
+
+### Passenger 
+- id: uuid
+- name: string
+- email: string
+- phone: string 
+- default_payment_method: PaymentMethod
+
+### Driver 
+- id: uuid
+- name: string
+- email: string
+- phone: string
+- vehicle: Vehicle 
+- status: enum ["OFFLINE", "ONLINE", "ON_TRIP_BUSY", "ON_TRIP_AVAILABLE_FOR_POOL"]
+- rating: float 
+
+### Vehicle (Le Véhicule)
+- make: string (ex: Toyota)
+- model: string (ex: Prius)
+- license_plate: string (plaque d'immatriculation)
+- capacity: integer (nombre max de passagers, ex: 4)
+
+### PaymentMethod (Moyen de paiement)
+- id: uuid
+- type: string (ex: "card", "apple_pay")
+- last4: string (ex: "4242" )
+
+
+
+### Ride
+- id: uuid
+- passenger_id: uuid
+- driver_id: uuid 
+- status: enum ["REQUESTED", "ACCEPTED", "IN_PROGRESS", "COMPLETED", "CANCELLED"]
+- pickup: Location
+- dropoff: Location
+- created_at: datetime
+- fare_estimate: float
+
+### PoolRide
+- id: uuid
+- driver_id: uuid
+- rides: Ride[] (liste des courses individuelles)
+- dropoff_order: Location[] (l'ordre dans lequel déposer les passagers)
+- vehicle_capacity: integer 
+
+
+
+
+
+## Endpoint Definitions
+
+### Rides
+
+#### Actions Passager
+
+
+$ POST /rides
+CreateRide(passenger_id: uuid, pickup: Location, dropoff: Location)
+  """Objectif : Demander une nouvelle course."""
+  => Ride (statut: REQUESTED)
+
+$ GET /rides/{id}
+GetRide(id: uuid)
+  """Objectif : Consulter le statut et les détails d'une course."""
+  => Ride
+
+$ POST /rides/{id}/cancel
+CancelRide(id: uuid)
+  """Objectif : Annuler une course en attente ou en cours."""
+  => Ride (statut: CANCELLED)
+
+$ GET /rides
+ListRides(offset: integer, limit: integer)
+  """Objectif : Lister l'historique des courses du passager (avec pagination)."""
+  => Ride[]
+
+$ POST /rides/{id}/cancel_passenger
+CancelRidePassenger(id: uuid, cancelled_by: passenger_id: uuid, reason: string)
+  """Objectif : Annuler une course en attente ou en cours """
+  => Ride (statut: CANCELLED, cancelled_by_id: passenger_id, cancellation_reason: string, cancelled_at: datetime)
+
+$ GET /rides_passenger/{passenger_id}
+ListRides(passenger_id: uuid,  offset: integer, limit: integer)
+  """Objectif : Lister l'historique des courses (le passager voit ses trajets)."""
+  => Ride[]
+
+
+
+============= PoolRides
+
+$ POST /pool-rides/{pool_id}/join
+JoinPool(pool_id: uuid, passenger_id: uuid, pickup: Location, dropoff: Location)
+  """Objectif : Rejoindre un PoolRide existant avec de la place."""
+  => PoolRide (ajoute un nouveau Ride à la liste existante)
+
+$ GET /pool-rides/{id}
+GetPoolRide(id: uuid)
+  """Objectif : Consulter les détails de son PoolRide (chauffeur, co-passagers, ordre de dépose)."""
+  => PoolRide
+
+
+
+
+
+
+
+#### Côté Conducteur (Driver)
+
+
+$ POST /rides/{id}/accept
+AcceptRide(id: uuid, driver_id: uuid)
+  """Objectif : Accepter une course demandée par un passager."""
+  => Ride (statut: ACCEPTED)
+
+$ POST /rides/{id}/start
+StartRide(id: uuid)
+  """Objectif : Démarrer la course (le passager est à bord)."""
+  => Ride (statut: IN_PROGRESS)
+
+$ POST /rides/{id}/complete
+CompleteRide(id: uuid)
+  """Objectif : Terminer la course à la destination finale."""
+  => Ride (statut: COMPLETED)
+
+$ POST /rides/{id}/cancel_driver
+CancelRideDriver(id: uuid, cancelled_by: driver_id: uuid, reason: string)
+  """Objectif : Annuler une course en attente ou en cours """
+  => Ride (statut: CANCELLED, cancelled_by_id: driver_id, cancellation_reason: string, cancelled_at: datetime)
+
+
+$ GET /rides_driver/{driver_id}
+ListRides(driver_id: uuid,  offset: integer, limit: integer)
+  """Objectif : Lister l'historique des courses (le conducteur voit ses revenus/courses)."""
+  => Ride[]
+
+
+============= PoolRides
+
+
+$ POST /pool-rides
+CreatePool(driver_id: uuid, vehicle_capacity: integer)
+  """Objectif : Initialiser un nouveau PoolRide."""
+  => PoolRide
+
+$ GET /drivers/{driver_id}/available-pools
+GetAvailablePoolRides(driver_id: uuid)
+  """Objectif : Découvrir de nouvelles courses à ajouter à son PoolRide en cours."""
+  => PoolRide[] (liste des pools à proximité avec de la place)
