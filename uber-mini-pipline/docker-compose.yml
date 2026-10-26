@@ -1,0 +1,45 @@
+services:
+  # 1. La base de données
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: uber_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # 2. Ton application complète (API + UI)
+  app:
+    build: .
+    ports:
+      - "8000:8000" # Port pour FastAPI (Swagger)
+      - "8501:8501" # Port pour Streamlit (Interface)
+    environment:
+      - DATABASE_URL=postgresql://user:password@db:5432/uber_db
+    depends_on:
+      - db
+
+  # Interface graphique pour PostgreSQL
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - db
+
+  # 4. L'outil de Dashboarding (Business Intelligence)
+  metabase:
+    image: metabase/metabase:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - MB_DB_TYPE=h2
+    depends_on:
+      - db
+
+volumes:
+  postgres_data:
