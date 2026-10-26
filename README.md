@@ -73,3 +73,8 @@ Le projet repose sur une architecture découplée garantissant la séparation de
 
 <img width="1036" height="825" alt="image" src="https://github.com/user-attachments/assets/aad583fd-6c97-462e-8f2e-b38ab49223be" />
 
+👤 Auteur:
+Fatima-Ezzahra BOUMAIZE
+🎓 Data Maroc Bootcamp — Promotion octobre-2026
+📧 fatimaezzahraboumaize020@gmail.com
+
